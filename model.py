@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
+
 class PtrNet(nn.Module):
 
 	def __init__(self, batch_size, seq_len, input_dim, hidden_dim, hidden_len):
@@ -26,11 +27,10 @@ class PtrNet(nn.Module):
 			cell = nn.LSTMCell(input_dim, hidden_dim)
 			self.decoder.append(cell)
 
-		# for pointers
+		# for creating pointers
 		self.W_encoder = nn.Linear(self.hidden_dim, self.hidden_dim)
 		self.W_decoder = nn.Linear(self.hidden_dim, self.hidden_dim)
-		self.V = nn.Linear(self.hidden_dim, self.seq_len)
-
+		self.V = nn.Linear(self.hidden_dim, self.input_dim)
 
 	def forward(self, input):
 		encoded_input = []
@@ -53,11 +53,11 @@ class PtrNet(nn.Module):
 			c_i = self.W_decoder(c)								# B*H
 			for j in range(self.seq_len):
 				e_j = self.W_encoder(encoded_input[j])			# B*H
-				u_j = self.V(F.tanh(c_i + e_j))					# B*N
+				u_j = self.V(F.tanh(c_i + e_j)).squeeze(1)		# B*I
 				u_i.append(u_j)
 
 			# a_i[j] = softmax(u_i[j])
-			u_i = torch.stack(u_i).t()			# B*N
+			u_i = torch.stack(u_i).t()			# N*B -> B*N
 			a_i = F.softmax(u_i)				# B*N
 			distributions.append(a_i)
 
@@ -69,4 +69,4 @@ class PtrNet(nn.Module):
 				a_j = torch.expand(self.batch_size, self.hidden_dim)			# B*H
 				d_i = d_i + (a_j*encoded_input[j])								# B*H
 
-		return distributions
+		return distributions					# N*B*N
