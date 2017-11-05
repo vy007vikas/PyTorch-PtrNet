@@ -9,6 +9,7 @@ import model
 MAX_EPISODES = 1000
 N = 5
 BATCH_SIZE = 128
+LEARNING_RATE = 0.005
 
 
 def generate_batch(len, batch_size=64):
@@ -16,18 +17,31 @@ def generate_batch(len, batch_size=64):
 
 
 def generate_sorted_onehot(input):
-	out = np.zeros((input.shape[1], input.shape[0], input.shape[1]))
+	input = np.array(input, dtype=np.float32)
+	out = np.zeros((input.shape[1], input.shape[0], input.shape[1]), dtype=np.float32)
 	for a in range(input.shape[0]):
 		ind = [b[0] for b in sorted(enumerate(input[a]), key=lambda i:i[1])]
 		for j in range(len(ind)):
-			out[j][i][ind[j]] = 1
+			out[j][a][ind[j]] = 1
 	return out
 
 
-arr = [[3,1,2],[1,2,3]]
-out = generate_sorted_onehot(arr)
-print arr
+def sanity_check_sorted_onehot():
+	arr = [[3,1,2],[1,2,3]]
+	out = generate_sorted_onehot(arr)
+	print out
 
-# for i in range(MAX_EPISODES):
-# 	input_batch = generate_batch(N, BATCH_SIZE)
-# 	correct_out = generate_sorted_onehot(input_batch)
+
+# main code
+ptrNet = model.PtrNet(BATCH_SIZE, N, 1, 64)
+optimizer = torch.optim.Adam(ptrNet.parameters(), LEARNING_RATE)
+for i in range(MAX_EPISODES):
+	input_batch = generate_batch(N, BATCH_SIZE)
+	correct_out = generate_sorted_onehot(input_batch)
+	pred_out = ptrNet.forward(input_batch)
+
+	loss = torch.sqrt(torch.mean(torch.pow(correct_out - pred_out, 2)))
+	loss.backward()
+	optimizer.step()
+
+	print 'Episode :- ', i, ' Loss :- ', loss

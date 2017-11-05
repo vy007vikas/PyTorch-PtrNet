@@ -7,7 +7,7 @@ import numpy as np
 
 class PtrNet(nn.Module):
 
-	def __init__(self, batch_size, seq_len, input_dim, hidden_dim, hidden_len):
+	def __init__(self, batch_size, seq_len, input_dim, hidden_dim):
 		super(PtrNet, self).__init__()
 
 		self.batch_size = batch_size				# B
