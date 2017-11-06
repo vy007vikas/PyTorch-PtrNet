@@ -18,13 +18,13 @@ class PtrNet(nn.Module):
 		# encoder
 		self.encoder = []
 		for i in range(self.seq_len):
-			cell = nn.LSTMCell(input_dim, hidden_dim)
+			cell = nn.LSTMCell(self.input_dim, self.hidden_dim)
 			self.encoder.append(cell)
 
 		# decoder
 		self.decoder = []
 		for i in range(self.seq_len):
-			cell = nn.LSTMCell(input_dim, hidden_dim)
+			cell = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
 			self.decoder.append(cell)
 
 		# for creating pointers
@@ -36,13 +36,15 @@ class PtrNet(nn.Module):
 		encoded_input = []
 
 		# initialize hidden state and cell state as random
-		h = Variable(torch.randn([self.batch_size, self.hidden_size]))		# B*H
-		c = Variable(torch.randn([self.batch_size, self.hidden_size]))		# B*H
+		h = Variable(torch.zeros([self.batch_size, self.hidden_dim]))		# B*H
+		c = Variable(torch.zeros([self.batch_size, self.hidden_dim]))		# B*H
 		for i in range(self.seq_len):
-			h, c = self.encoder[i](input[i], (h, c))						# B*H
-			encoded_input.append(c)
+			inp = Variable(torch.from_numpy(input[:, i])).unsqueeze(1)		# B, -> B*I
+			inp = inp.type(torch.FloatTensor)
+			h, c = self.encoder[i](inp, (h, c))								# B*H
+			encoded_input.append(h)
 
-		d_i = Variable(torch.Tensor([-1]*self.batch_size).view(self.batch_size, self.seq_len))			# B*I
+		d_i = Variable(torch.Tensor(self.batch_size, self.hidden_dim).fill_(-1.0))		# B*H
 		distributions = []
 		for i in range(self.seq_len):
 			h, c = self.decoder[i](d_i, (h, c))				# B*H
@@ -62,11 +64,11 @@ class PtrNet(nn.Module):
 			distributions.append(a_i)
 
 			# d_i+1 = sum(a_i[j]*e[j]) over j
-			d_i = 0
+			d_i = Variable(torch.zeros([self.batch_size, self.input_dim]))
 			for j in range(self.seq_len):
 				# select jth column of a_i
-				a_j = torch.index_select(a_i, 1, torch.LongTensor([j]))			# B,
-				a_j = torch.expand(self.batch_size, self.hidden_dim)			# B*H
-				d_i = d_i + (a_j*encoded_input[j])								# B*H
+				a_j = torch.index_select(a_i, 1, Variable(torch.LongTensor([j])))		# B,
+				a_j = a_j.expand(self.batch_size, self.hidden_dim)						# B*H
+				d_i = d_i + (a_j*encoded_input[j])										# B*H
 
 		return distributions					# N*B*N
