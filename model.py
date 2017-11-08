@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import numpy as np
 
 
 class PtrNet(nn.Module):
@@ -71,4 +70,6 @@ class PtrNet(nn.Module):
 				a_j = a_j.expand(self.batch_size, self.hidden_dim)						# B*H
 				d_i = d_i + (a_j*encoded_input[j])										# B*H
 
+		distributions = torch.stack(distributions)
+		# print distributions
 		return distributions					# N*B*N
