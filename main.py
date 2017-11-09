@@ -29,7 +29,7 @@ def generate_sorted_onehot(input):
 
 
 def sanity_check_sorted_onehot():
-	arr = [[3,1,2],[1,2,3]]
+	arr = [[.3,.1,.2],[.1,.2,.3]]
 	out = generate_sorted_onehot(arr)
 	print out
 
@@ -40,16 +40,28 @@ SEQ_LEN = 5
 INPUT_DIM = 1
 HIDDEN_SIZE = 128
 BATCH_SIZE = 128
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.002
+
+sanity_check_sorted_onehot()
 
 # main code
-trainer = train.Trainer(SEQ_LEN, INPUT_DIM, HIDDEN_SIZE, BATCH_SIZE, LEARNING_RATE)
-for i in range(MAX_EPISODES):
-	# input_batch = generate_sanity_check_batch(N, BATCH_SIZE)
-	input_batch = generate_random_batch(N, BATCH_SIZE)
-	correct_out = generate_sorted_onehot(input_batch)
+def train_model():
+	trainer = train.Trainer(SEQ_LEN, INPUT_DIM, HIDDEN_SIZE, BATCH_SIZE, LEARNING_RATE)
+	for i in range(MAX_EPISODES):
+		# input_batch = generate_sanity_check_batch(SEQ_LEN, BATCH_SIZE)
+		input_batch = generate_random_batch(SEQ_LEN, BATCH_SIZE)
+		correct_out = generate_sorted_onehot(input_batch)
 
-	trainer.train(input_batch, correct_out)
+		trainer.train(input_batch, correct_out)
 
-	if i % 1000 == 0:
-		trainer.save_model(i)
+		if i % 1000 == 0:
+			trainer.save_model(i)
+
+def test_model(ep):
+	trainer = train.Trainer(SEQ_LEN, INPUT_DIM, HIDDEN_SIZE, BATCH_SIZE, LEARNING_RATE)
+	trainer.load_model(ep)
+	input_batch = generate_random_batch(SEQ_LEN, BATCH_SIZE)
+	trainer.test_batch(input_batch)
+
+train_model()
+# test_model(6000)

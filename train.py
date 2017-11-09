@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import numpy as np
 import model
 
+
 class Trainer:
 
 	def __init__(self, seq_len, input_dim, hidden_dim=256, batch_size=128, learning_rate=0.001):
@@ -24,10 +25,19 @@ class Trainer:
 		actual = actual.data.numpy()
 		pred = pred.data.numpy()
 		sum = 0.0
-		predArg = np.argmax(pred, axis=2)
 		for i in range(pred.shape[0]):
 			for j in range(pred.shape[1]):
-				if actual[i][j][predArg[i][j]] != 1:
+				if actual[i][j][np.argmax(pred[i][j])] != 1:
+					sum += 1.0
+		return sum/pred.shape[1]
+
+	def correct_count_score(self, actual, pred):
+		actual = actual.data.numpy()
+		pred = pred.data.numpy()
+		sum = 0.0
+		for i in range(pred.shape[0]):
+			for j in range(pred.shape[1]):
+				if actual[i][j][np.argmax(pred[i][j])] == 1:
 					sum += 1.0
 		return sum/pred.shape[1]
 
@@ -41,13 +51,33 @@ class Trainer:
 
 		self.episode += 1
 		print 'Episode :- ', self.episode, ' L2 Loss :- ', loss.data.numpy(), \
-			' My Loss :- ', self.incorrect_count_loss(correct_out, pred_out)
+			' My Loss :- ', self.incorrect_count_loss(correct_out, pred_out),\
+			' My Score :- ', self.correct_count_score(correct_out, pred_out)
+
+		if self.episode%500==0:
+			self.test_batch(input)
 
 	def test_batch(self, input):
 		pred_out = self.ptrNet.forward(input)
+		pred_out = pred_out.data.numpy()
 
+		print ' --- INPUT ---'
+		for i in range(5):
+			print input[i]
 
+		print ' --- OUTPUT ---'
+		for i in range(5):
+			for j in range(input.shape[1]):
+				print input[i][np.argmax(pred_out[j][i])];
+				# print pred_out[j][i]
+			print '\n'
 
+		print ' ---- PROB ----'
+		for i in range(5):
+			for j in range(input.shape[1]):
+				# print input[i][np.argmax(pred_out[j][i])];
+				print pred_out[j][i]
+			print '\n'
 
 	def save_model(self, episode_count):
 		"""
